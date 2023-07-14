@@ -1,15 +1,11 @@
 <template>
-  <Head>
-    <Title>{{ news?.title || "News app" }}</Title>
-  </Head>
-
-  <AppError v-if="!news" />
+  <app-error v-if="!news" />
   <template v-else>
-    <UiTypography type="title">
+    <ui-typography type="title">
       {{ news?.title }}
-    </UiTypography>
+    </ui-typography>
 
-    <p v-for="(item, index) in content" :key="index + item" class="news-p">
+    <p v-for="(item, index) of content" :key="index + item" class="news-p">
       {{ item }}
     </p>
 
@@ -19,32 +15,57 @@
   </template>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
 import { NewsInterface } from "interfaces/News.interface";
 
-const { setIsLoading } = useAppState();
-const { getNewsApi } = useNewsApi();
+export default {
+  computed: {
+    content(): string[] {
+      if (this.news) {
+        return this.news?.content.split("\n");
+      }
+      return [];
+    },
+  },
+  async setup() {
+    const { params } = useRoute();
+    const { setIsLoading } = useAppState();
+    const { getNewsApi } = useNewsApi();
 
-const { params } = useRoute();
-const newsId = params?.id as string;
-const news = ref<NewsInterface>();
+    const newsId = params?.id as string;
+    const news = ref<NewsInterface>();
 
-const content = computed(() => news.value?.content.split("\n"));
+    try {
+      setIsLoading(true);
+      const { data } = await useAsyncData<NewsInterface>(() =>
+        getNewsApi(newsId)
+      );
 
-try {
-  setIsLoading(true);
-  const { data } = await useAsyncData<NewsInterface>(() => getNewsApi(newsId));
+      if (data.value) {
+        news.value = data.value;
+      }
+    } catch (err: any) {
+      console.error(`ERROR:${err}`);
+    } finally {
+      setIsLoading(false);
 
-  if (data.value) {
-    news.value = data.value;
-  }
-} catch (err: any) {
-  console.error(`ERROR:${err}`);
-} finally {
-  setIsLoading(false);
-}
+      useHead({
+        title: news.value?.title || "News app",
+      });
+    }
+
+    return {
+      news,
+    };
+  },
+};
 </script>
 
 <style lang="scss" scoped>
-@import "styles/pages/news/[id]";
+.news-p {
+  text-indent: 2rem;
+}
+.author {
+  font-style: italic;
+}
 </style>

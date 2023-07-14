@@ -12,10 +12,47 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-const isOpen = ref(false);
+<script lang="ts">
+export default {
+  data() {
+    return {
+      isOpen: false,
+    };
+  },
+};
 </script>
 
 <style lang="scss" scoped>
-@import "styles/components/ui/UiDropdown";
+@import "styles/variables";
+@import "styles/functions";
+
+.dropdown {
+  cursor: pointer;
+
+  &-content {
+    position: absolute;
+    top: 100%;
+    right: px(-16);
+    z-index: $z-regular;
+    width: 100%;
+    min-width: px(180);
+    display: flex;
+    flex-direction: column;
+    background-color: $background;
+    border: 1px solid $light-grey;
+    border-radius: $border-radius;
+
+    :deep(> *) {
+      cursor: pointer;
+      display: block;
+      font-size: px(18);
+      text-align: left;
+      padding: px(4);
+    }
+
+    :deep(> *:not(:last-child)) {
+      border-bottom: 1px solid $light-grey;
+    }
+  }
+}
 </style>

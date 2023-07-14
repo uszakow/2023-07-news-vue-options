@@ -1,22 +1,22 @@
 <template>
   <div class="user-form relative m-auto mt-3">
-    <UiTabs
+    <ui-tabs
       :tabs="tabs"
       :active-tab="activeTab"
       @tab-change="activeTab = $event"
     />
     <div class="user-form-wrap px-2 py-3">
-      <UiTypography type="title">
+      <ui-typography type="title">
         {{ activeTab === "login" ? "Dane użytkownika:" : "Nowy użytkownik:" }}
-      </UiTypography>
-      <UiInput
+      </ui-typography>
+      <ui-input
         :value="name"
         label="Nazwa użytkownika"
         placeholder="Wprowadź nazwę użytkownika"
         required
         @value-change="name = $event"
       />
-      <UiInput
+      <ui-input
         type="password"
         :value="password"
         label="Hasło"
@@ -28,88 +28,118 @@
         required
         @value-change="password = $event"
       />
-      <UiButton
+      <ui-button
         classes="mt-2 mb-1 m-auto"
         :label="activeTab === 'login' ? 'Zaloguj się' : 'Utwórz konto'"
         :loading="loading"
         @click-button="activeTab === 'login' ? loginUser() : createUser()"
       />
-      <UiErrorMessage v-if="error" :message="error" />
+      <ui-error-message v-if="error" :message="error" />
     </div>
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
 import { TabItemInterface } from "interfaces/TabItem.interface";
 import { useUserApi } from "@/composables/useUserApi";
 import { UserDto } from "interfaces/User.dto";
 
-const tabs: TabItemInterface[] = [
-  { id: "login", label: "Zaloguj się" },
-  { id: "registration", label: "Utwórz konto" },
-];
+export default {
+  data() {
+    return {
+      tabs: [
+        { id: "login", label: "Zaloguj się" },
+        { id: "registration", label: "Utwórz konto" },
+      ] as TabItemInterface[],
+      activeTab: "",
+      name: "",
+      password: "",
+      loading: false,
+      error: "" as string | string[],
+    };
+  },
+  watch: {
+    error() {
+      setTimeout(() => {
+        this.error = "";
+      }, 5000);
+    },
+  },
+  methods: {
+    async loginUser(): Promise<void> {
+      const body: UserDto = {
+        name: this.name,
+        password: this.password,
+      };
 
-const { setUserState } = useAppState();
-const { createUserApi, loginUserApi } = useUserApi();
+      try {
+        this.loading = true;
+        const token = await this.loginUserApi(body);
 
-const activeTab = ref<string>(tabs[0].id);
-const name = ref("");
-const password = ref("");
-const loading = ref(false);
-const error = ref<string | string[]>("");
+        if (token) {
+          localStorage.setItem("token", token);
+        }
 
-watch(error, () => {
-  setTimeout(() => {
-    error.value = "";
-  }, 5000);
-});
+        await this.setUserState();
+      } catch (err: any) {
+        this.error =
+          err.data?.message ||
+          "Nie udało się zalogować, prosimy spróbować później";
+      } finally {
+        this.loading = false;
+      }
+    },
+    async createUser(): Promise<void> {
+      const body: UserDto = {
+        name: this.name,
+        password: this.password,
+      };
 
-const loginUser = async () => {
-  const body: UserDto = {
-    name: name.value,
-    password: password.value,
-  };
+      try {
+        this.loading = true;
 
-  try {
-    loading.value = true;
-    const token = await loginUserApi(body);
+        const response = await this.createUserApi(body);
 
-    if (token) {
-      localStorage.setItem("token", token);
-    }
+        if (response.statusCode === 201) {
+          await this.loginUser();
+        }
+      } catch (err: any) {
+        this.error =
+          err.data?.message || "Nie udało się stworzyć konto użytkownika";
+      } finally {
+        this.loading = false;
+      }
+    },
+  },
+  mounted() {
+    this.activeTab = this.tabs[0].id;
+  },
+  setup() {
+    const { setUserState } = useAppState();
+    const { createUserApi, loginUserApi } = useUserApi();
 
-    await setUserState();
-  } catch (err: any) {
-    error.value =
-      err.data?.message || "Nie udało się zalogować, prosimy spróbować później";
-  } finally {
-    loading.value = false;
-  }
-};
-
-const createUser = async () => {
-  const body: UserDto = {
-    name: name.value,
-    password: password.value,
-  };
-
-  try {
-    loading.value = true;
-
-    const response = await createUserApi(body);
-
-    if (response.statusCode === 201) {
-      loginUser();
-    }
-  } catch (err: any) {
-    error.value =
-      err.data?.message || "Nie udało się stworzyć konto użytkownika";
-  } finally {
-    loading.value = false;
-  }
+    return {
+      setUserState,
+      createUserApi,
+      loginUserApi,
+    };
+  },
 };
 </script>
 
 <style lang="scss" scoped>
-@import "styles/components/UserForm";
+@import "styles/variables";
+@import "styles/functions";
+
+.user-form {
+  width: px(600);
+
+  &-wrap {
+    border-right: 2px solid $main;
+    border-bottom: 2px solid $main;
+    border-left: 2px solid $main;
+    border-bottom-right-radius: px(22);
+    border-bottom-left-radius: px(22);
+  }
+}
 </style>

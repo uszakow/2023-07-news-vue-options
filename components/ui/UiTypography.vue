@@ -7,21 +7,34 @@
   </span>
 </template>
 
-<script lang="ts" setup>
-const props = defineProps({
-  type: {
-    type: String as () => "title" | "text",
-    required: true,
+<script lang="ts">
+export default {
+  props: {
+    type: {
+      type: String as () => "title" | "text",
+      required: true,
+    },
+    classes: {
+      type: String,
+      default: "",
+    },
   },
-  classes: {
-    type: String,
-    default: "",
+  data() {
+    return {
+      typographyClasses: `${this.$props.type} ${this.$props.classes}`,
+    };
   },
-});
-
-const typographyClasses = `${props.type} ${props.classes}`;
+};
 </script>
 
 <style lang="scss" scoped>
-@import "styles/components/ui/UiTypography";
+@import "styles/functions";
+
+.title {
+  font-size: px(22);
+}
+
+.text {
+  font-size: px(16);
+}
 </style>

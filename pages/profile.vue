@@ -1,34 +1,47 @@
 <template>
-  <Head>
-    <Title>Strona użytkownika</Title>
-  </Head>
-
-  <UiTypography type="title" classes="flex flex-justify-between flex-align-end">
+  <ui-typography
+    type="title"
+    classes="flex flex-justify-between flex-align-end"
+  >
     <span>Nazwa użytkownika: {{ user?.name }}</span>
-    <UiButton type="inline" label="Wyloguj się" @click-button="logout()" />
-  </UiTypography>
-  <UiTypography type="text" classes="block">
+    <ui-button type="inline" label="Wyloguj się" @click-button="logout()" />
+  </ui-typography>
+  <ui-typography type="text" classes="block">
     {{ user?.name }} stworzył {{ newsCount }}
-  </UiTypography>
+  </ui-typography>
 
-  <ProfileDataChange />
+  <profile-data-change />
 </template>
 
-<script lang="ts" setup>
-const { user, setUserState } = useAppState();
+<script lang="ts">
+export default {
+  computed: {
+    newsCount(): string {
+      const count = this.user?.news.length ?? 0;
+      const text = count === 1 ? "wiadomość" : "wiadomości";
+      return `${count} ${text}`;
+    },
+  },
+  methods: {
+    logout(): void {
+      localStorage.removeItem("token");
+      this.setUserState();
+    },
+  },
+  mounted() {
+    this.setUserState();
+  },
+  setup() {
+    useHead({
+      title: "Strona użytkownika",
+    });
 
-const newsCount = computed(() => {
-  const count = user.value?.news.length ?? 0;
-  const text = count === 1 ? "wiadomość" : "wiadomości";
-  return `${count} ${text}`;
-});
+    const { user, setUserState } = useAppState();
 
-const logout = () => {
-  localStorage.removeItem("token");
-  setUserState();
+    return {
+      user,
+      setUserState,
+    };
+  },
 };
-
-onMounted(() => {
-  setUserState();
-});
 </script>

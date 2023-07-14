@@ -1,41 +1,51 @@
 <template>
-  <Head>
-    <Title>Wiadomości</Title>
-  </Head>
-
-  <NewsPreview
-    v-for="item in news"
+  <news-preview
+    v-for="item of news"
     :key="item.id"
     :news="item"
     @news-change="getNewsList()"
   />
 
-  <NewsAdd v-if="user" @news-change="getNewsList()" />
+  <news-add v-if="user" @news-change="getNewsList()" />
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
 import { NewsInterface } from "interfaces/News.interface";
 
-const { user, setIsLoading } = useAppState();
-const { getNewsListApi } = useNewsApi();
+export default {
+  async setup() {
+    useHead({
+      title: "Wiadomości",
+    });
 
-const news = ref<NewsInterface[]>([]);
+    const { user, setIsLoading } = useAppState();
+    const { getNewsListApi } = useNewsApi();
 
-const getNewsList = async (): Promise<void> => {
-  try {
-    setIsLoading(true);
-    const { data } = await useAsyncData<NewsInterface[]>(() =>
-      getNewsListApi()
-    );
+    const news = ref<NewsInterface[]>([]);
 
-    if (data.value) {
-      news.value = [...data.value];
-    }
-  } catch (err: any) {
-    console.error(`ERROR:${err}`);
-  } finally {
-    setIsLoading(false);
-  }
+    const getNewsList = async (): Promise<void> => {
+      try {
+        setIsLoading(true);
+        const { data } = await useAsyncData<NewsInterface[]>(() =>
+          getNewsListApi()
+        );
+
+        if (data.value) {
+          news.value = [...data.value];
+        }
+      } catch (err: any) {
+        console.error(`ERROR:${err}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    await getNewsList();
+
+    return {
+      user,
+      news,
+      getNewsList,
+    };
+  },
 };
-await getNewsList();
 </script>

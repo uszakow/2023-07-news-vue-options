@@ -1,35 +1,35 @@
 <template>
   <div class="news-preview p-1 mb-2">
-    <UiTypography
+    <ui-typography
       classes="flex flex-justify-between flex-align-end"
       type="title"
     >
-      <NuxtLink :to="`/news/${news.id}`" class="news-preview-title">
+      <nuxt-link :to="`/news/${news.id}`" class="news-preview-title">
         {{ news.title }}
-      </NuxtLink>
+      </nuxt-link>
 
       <div v-if="user?.id === news.author.id" class="flex">
-        <UiButton
+        <ui-button
           type="inline"
           label="Edytuj"
           @click-button="isEditNewsModalOpen = true"
         />
-        <UiButton
+        <ui-button
           classes="ml-2"
           type="inline"
           label="Usuń"
           @click-button="isDeleteNewsModalOpen = true"
         />
       </div>
-    </UiTypography>
+    </ui-typography>
 
     <div class="news-preview-content">
-      <p v-for="(item, index) in content" :key="index + item">
+      <p v-for="(item, index) of content" :key="index + item">
         {{ item }}
       </p>
     </div>
 
-    <NewsManageModal
+    <news-manage-modal
       :is-open="isEditNewsModalOpen"
       modal-title="Edytowanie wiadomości"
       :news-title="updatedNewsTitle"
@@ -42,16 +42,16 @@
       @close-modal="closeEditNewsModal()"
     />
 
-    <UiModal
+    <ui-modal
       title="Usuń wiadomość"
       :is-open="isDeleteNewsModalOpen"
       @close-modal="closeDeleteNewsModal()"
     >
-      <UiTypography type="text">
+      <ui-typography type="text">
         Potwierdź usunięcie tej wiadomości.
-      </UiTypography>
+      </ui-typography>
 
-      <UiButton
+      <ui-button
         classes="mt-2 m-auto"
         type="danger"
         label="Usuń wiadomość"
@@ -59,93 +59,123 @@
         @click-button="deleteNews()"
       />
 
-      <UiErrorMessage v-if="error" :message="error" />
-    </UiModal>
+      <ui-error-message v-if="error" :message="error" />
+    </ui-modal>
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
 import { NewsInterface } from "interfaces/News.interface";
 import { UpdateNewsDto } from "interfaces/UpdateNews.dto";
 
-const props = defineProps({
-  news: {
-    type: Object as () => NewsInterface,
-    required: true,
+export default {
+  props: {
+    news: {
+      type: Object as () => NewsInterface,
+      required: true,
+    },
   },
-});
+  emits: ["newsChange"],
+  data() {
+    return {
+      isEditNewsModalOpen: false,
+      isDeleteNewsModalOpen: false,
+      updatedNewsTitle: this.$props.news.title,
+      updatedNewsContent: this.$props.news.content,
+      loading: false,
+      error: "" as string | string[],
+    };
+  },
+  computed: {
+    content(): string[] {
+      return this.$props.news.content.split("\n");
+    },
+  },
+  methods: {
+    async updateNews(): Promise<void> {
+      const body: UpdateNewsDto = {
+        title: this.updatedNewsTitle,
+        content: this.updatedNewsContent,
+      };
 
-const emit = defineEmits<{
-  newsChange: [];
-}>();
+      try {
+        this.loading = true;
 
-const { user, token } = useAppState();
-const { updateNewsApi, deleteNewsApi } = useNewsApi();
+        if (this.token) {
+          await this.updateNewsApi(this.$props.news.id, body, this.token);
+        }
 
-const isEditNewsModalOpen = ref(false);
-const isDeleteNewsModalOpen = ref(false);
-const updatedNewsTitle = ref(props.news.title);
-const updatedNewsContent = ref(props.news.content);
+        this.$emit("newsChange");
 
-const loading = ref(false);
-const error = ref<string | string[]>("");
+        this.isEditNewsModalOpen = false;
+      } catch (err: any) {
+        this.error =
+          err.data?.message || "Nie udało się zaktualizować wiadomość.";
+      } finally {
+        this.loading = false;
+      }
+    },
+    async deleteNews(): Promise<void> {
+      try {
+        this.loading = true;
 
-const content = computed(() => props.news.content.split("\n"));
+        if (this.token) {
+          await this.deleteNewsApi(this.$props.news.id, this.token);
+        }
 
-const updateNews = async (): Promise<void> => {
-  const body: UpdateNewsDto = {
-    title: updatedNewsTitle.value,
-    content: updatedNewsContent.value,
-  };
+        this.$emit("newsChange");
 
-  try {
-    loading.value = true;
+        this.isDeleteNewsModalOpen = false;
+      } catch (err: any) {
+        this.error = err.data?.message || "Nie udałos się usunąć wiadomość.";
+      } finally {
+        this.loading = false;
+      }
+    },
+    closeEditNewsModal(): void {
+      this.error = "";
+      this.updatedNewsTitle = this.$props.news.title;
+      this.updatedNewsContent = this.$props.news.content;
+      this.isEditNewsModalOpen = false;
+    },
+    closeDeleteNewsModal(): void {
+      this.error = "";
+      this.isDeleteNewsModalOpen = false;
+    },
+  },
+  setup() {
+    const { user, token } = useAppState();
+    const { updateNewsApi, deleteNewsApi } = useNewsApi();
 
-    if (token.value) {
-      await updateNewsApi(props.news.id, body, token.value);
-    }
-
-    emit("newsChange");
-
-    isEditNewsModalOpen.value = false;
-  } catch (err: any) {
-    error.value = err.data?.message || "Nie udało się zaktualizować wiadomość.";
-  } finally {
-    loading.value = false;
-  }
-};
-
-const deleteNews = async (): Promise<void> => {
-  try {
-    loading.value = true;
-
-    if (token.value) {
-      await deleteNewsApi(props.news.id, token.value);
-    }
-
-    emit("newsChange");
-
-    isDeleteNewsModalOpen.value = false;
-  } catch (err: any) {
-    error.value = err.data?.message || "Nie udałos się usunąć wiadomość.";
-  } finally {
-    loading.value = false;
-  }
-};
-
-const closeEditNewsModal = (): void => {
-  error.value = "";
-  updatedNewsTitle.value = props.news.title;
-  updatedNewsContent.value = props.news.content;
-  isEditNewsModalOpen.value = false;
-};
-
-const closeDeleteNewsModal = (): void => {
-  error.value = "";
-  isDeleteNewsModalOpen.value = false;
+    return {
+      user,
+      token,
+      updateNewsApi,
+      deleteNewsApi,
+    };
+  },
 };
 </script>
 
 <style lang="scss" scoped>
-@import "styles/components/newsList/NewsPreview";
+@import "styles/variables";
+@import "styles/mixins";
+
+.news-preview {
+  border: 2px solid $main;
+  border-radius: $border-radius;
+
+  &-title {
+    @include text-one-line;
+    color: $main;
+
+    &:hover {
+      color: $error;
+    }
+  }
+
+  &-content {
+    @include text-ellipsis();
+  }
+}
 </style>

@@ -1,3 +1,3 @@
 <template>
-  <UserForm />
+  <user-form />
 </template>

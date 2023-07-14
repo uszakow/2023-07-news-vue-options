@@ -1,3 +1,3 @@
 <template>
-  <UiTypography type="title">Strona nie była znaleziona.</UiTypography>
+  <ui-typography type="title">Strona nie była znaleziona.</ui-typography>
 </template>

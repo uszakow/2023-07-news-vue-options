@@ -1,34 +1,48 @@
 <template>
-  <Head>
-    <Title>News app</Title>
-    <Meta
-      name="description"
-      content="Application for adding and managing news."
-    />
-  </Head>
-  <AppNavbar />
+  <app-navbar />
   <main class="content">
     <slot></slot>
-    <UiLoader v-show="isLoading" />
+    <ui-loader v-show="isLoading" />
   </main>
-  <AppFooter />
+  <app-footer />
 </template>
 
-<script lang="ts" setup>
-const { isLoading, user, setUserState } = useAppState();
-const route = useRoute();
+<script lang="ts">
+export default {
+  watch: {
+    // redirect for logged/unlogged users
+    user() {
+      if (!this.isLoading && !this.user && this.route.path === "/profile") {
+        navigateTo("/login");
+      }
+      if (!this.isLoading && this.user && this.route.path === "/login") {
+        navigateTo("/profile");
+      }
+    },
+  },
+  mounted() {
+    this.setUserState();
+  },
+  setup() {
+    useHead({
+      title: "News app",
+      meta: [
+        {
+          name: "description",
+          content: "Application for adding and managing news.",
+        },
+      ],
+    });
 
-// redirect for logged/unlogged users
-watch([user, isLoading, route], () => {
-  if (!isLoading.value && !user.value && route.path === "/profile") {
-    navigateTo("/login");
-  }
-  if (!isLoading.value && user.value && route.path === "/login") {
-    navigateTo("/profile");
-  }
-});
+    const route = useRoute();
+    const { isLoading, user, setUserState } = useAppState();
 
-onMounted(() => {
-  setUserState();
-});
+    return {
+      route,
+      isLoading,
+      user,
+      setUserState,
+    };
+  },
+};
 </script>

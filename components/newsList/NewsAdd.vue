@@ -1,12 +1,12 @@
 <template>
-  <UiButton
+  <ui-button
     classes="mt-2"
     type="adding"
     label="Dodaj nową wiadomość"
     @click-button="isModalOpen = true"
   />
 
-  <NewsManageModal
+  <news-manage-modal
     :is-open="isModalOpen"
     modal-title="Dodanie nowej wiadomości"
     :news-title="newsTitle"
@@ -20,49 +20,58 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="ts">
 import { NewsDto } from "interfaces/News.dto";
 
-const emit = defineEmits<{
-  newsChange: [];
-}>();
+export default {
+  emits: ["newsChange"],
+  data() {
+    return {
+      isModalOpen: false,
+      newsTitle: "",
+      newsContent: "",
+      loading: false,
+      error: "" as string | string[],
+    };
+  },
+  methods: {
+    async createNews(): Promise<void> {
+      const body: NewsDto = {
+        title: this.newsTitle,
+        content: this.newsContent,
+      };
 
-const { token } = useAppState();
-const { createNewsApi } = useNewsApi();
+      try {
+        this.loading = true;
 
-const isModalOpen = ref(false);
-const newsTitle = ref("");
-const newsContent = ref("");
-const loading = ref(false);
-const error = ref<string | string[]>("");
+        if (this.token) {
+          await this.createNewsApi(body, this.token);
+        }
 
-const createNews = async (): Promise<void> => {
-  const body: NewsDto = {
-    title: newsTitle.value,
-    content: newsContent.value,
-  };
+        this.$emit("newsChange");
 
-  try {
-    loading.value = true;
+        this.newsTitle = "";
+        this.newsContent = "";
+        this.isModalOpen = false;
+      } catch (err: any) {
+        this.error = err.data?.message || "Nie udało się stworzyć wiadomość.";
+      } finally {
+        this.loading = false;
+      }
+    },
+    closeModal(): void {
+      this.error = "";
+      this.isModalOpen = false;
+    },
+  },
+  setup() {
+    const { token } = useAppState();
+    const { createNewsApi } = useNewsApi();
 
-    if (token.value) {
-      await createNewsApi(body, token.value);
-    }
-
-    emit("newsChange");
-
-    newsTitle.value = "";
-    newsContent.value = "";
-    isModalOpen.value = false;
-  } catch (err: any) {
-    error.value = err.data?.message || "Nie udało się stworzyć wiadomość.";
-  } finally {
-    loading.value = false;
-  }
-};
-
-const closeModal = (): void => {
-  error.value = "";
-  isModalOpen.value = false;
+    return {
+      token,
+      createNewsApi,
+    };
+  },
 };
 </script>
