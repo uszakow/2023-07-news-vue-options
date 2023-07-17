@@ -118,10 +118,12 @@ export default {
       this.isModalOpen = true;
     },
     openChangePasswordModal(): void {
-      (this.modalName = "password"), (this.isModalOpen = true);
+      this.modalName = "password";
+      this.isModalOpen = true;
     },
     openDeleteProfileModal(): void {
-      (this.modalName = "delete"), (this.isModalOpen = true);
+      this.modalName = "delete";
+      this.isModalOpen = true;
     },
     closeModal(): void {
       this.name = "";
