@@ -56,11 +56,16 @@ export default {
       password: "",
       loading: false,
       error: "" as string | string[],
+      timeout: null as NodeJS.Timeout | null,
     };
   },
   watch: {
     error() {
-      setTimeout(() => {
+      if (this.timeout) {
+        clearTimeout(this.timeout);
+      }
+
+      this.timeout = setTimeout(() => {
         this.error = "";
       }, 5000);
     },
@@ -113,6 +118,11 @@ export default {
   },
   mounted() {
     this.activeTab = this.tabs[0].id;
+  },
+  beforeUnmount() {
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+    }
   },
   setup() {
     const { setUserState } = useAppState();
