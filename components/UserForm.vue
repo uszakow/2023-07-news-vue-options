@@ -119,7 +119,7 @@ export default {
   mounted() {
     this.activeTab = this.tabs[0].id;
   },
-  beforeUnmount() {
+  unmounted() {
     if (this.timeout) {
       clearTimeout(this.timeout);
     }
